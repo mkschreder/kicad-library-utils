@@ -28,7 +28,7 @@ class Documentation(object):
 
         if create:
             if os.path.lexists(self.filename):
-                sys.stderr.write("File already exists!\n")
+                sys.stderr.write("File already exists! %s\n" % self.filename)
                 return
             else:
                 self.validFile = True
@@ -228,7 +228,12 @@ class Component(object):
 
                     elif line[0][0] == 'F':
                         values = line[1:] + ['' for n in range(len(self._FN_KEYS) - len(line[1:]))]
-                        self.fields.append(dict(zip(self._FN_KEYS,values)))
+                        keys = dict(zip(self._FN_KEYS,values))
+                        if "name" in keys:
+                            keys["name"] = keys["name"].replace("\"", "")
+                        if "fieldname" in keys:
+                            keys["fieldname"] = keys["fieldname"].replace("\"", "")
+                        self.fields.append(keys)
 
         #perform checksum calculation
         try:
@@ -238,12 +243,43 @@ class Component(object):
         self.checksum = md5.hexdigest()
 
         # define some shortcuts
-        self.name = self.definition['name']
+        self.name = self.definition['name'];
+
+        # remove tilde nonsense
+        if self.name.startswith('~'):
+            self.name = self.name[1:len(self.name)];
+
         self.reference = self.definition['reference']
         self.pins = self.draw['pins']
 
         # get documentation
         self.documentation = self.getDocumentation(documentation,self.name)
+
+    @property
+    def mpn(self):
+        for field in self.fields:
+            if "fieldname" in field and field["fieldname"] == 'MPN':
+                return field["name"]
+        return None
+
+    def field(self, name):
+        for field in self.fields:
+            if "fieldname" in field and field["fieldname"] == name:
+                return field;
+        return None
+
+    def addField(self, data):
+        if not data["fieldname"]:
+            print("addField: missing fieldname!");
+            return
+
+        f = self.field(data["fieldname"]);
+        if f:
+            f.update(data);
+        else:
+            d = {'text_orient': 'H', 'visibility': 'I', 'posx': '0', 'posy': '0', 'text_size': '50', 'vtext_justify': 'CNN', 'htext_justify': 'C'};
+            d.update(data);
+            self.fields.append(d);
 
     def resetDraw(self):
         self.draw = {
@@ -501,7 +537,7 @@ class SchLib(object):
                 for k, key in enumerate(keys_list):
                     key_val = component.fields[i][key]
 
-                    if k == 0 and not key_val.startswith('"'):
+                    if k == 0 and not key_val.startswith('"') or k > 7:
                         key_val = '"' + key_val + '"'
 
                     line += key_val + ' '
