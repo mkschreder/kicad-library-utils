@@ -57,6 +57,12 @@ class Component(object):
             elif line[0] == 'F':
                 self.fields.append(dict(zip(key_list,values)))
 
+    def field(self, name):
+        for field in self.fields:
+            if "name" in field and field["name"] == "\"" + name + "\"":
+                return field;
+        return None
+
     # TODO: error checking
     # * check if field_data is a dictionary
     # * check if at least 'ref' and 'name' were passed
@@ -130,6 +136,7 @@ class Schematic(object):
         self.sheets = []
         self.bitmaps = []
         self.texts = []
+        self.labels = []
         self.wires = []
         self.entries = []
         self.conns = []
@@ -162,6 +169,10 @@ class Schematic(object):
                 elif line.startswith('Text'):
                     data = {'desc':line, 'data':f.readline()}
                     self.texts.append(data)
+                    if data["desc"].startswith("Text GLabel"):
+                        data["name"] = data["data"].replace("\n", "");
+                        #data["direction"] = data["data"].replace("\n", "");
+                        self.labels.append(data);
                 elif line.startswith('Wire'):
                     data = {'desc':line, 'data':f.readline()}
                     self.wires.append(data)
