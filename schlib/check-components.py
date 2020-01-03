@@ -1,9 +1,13 @@
+#!/usr/bin/env python
+
 import argparse
 from schlib import *
 from suds.client import Client
 import time
 
-with open("mouser-key.txt", 'r') as keyfile:
+keyfile = os.path.dirname(os.path.realpath(__file__)) +"/mouser-key.txt";
+
+with open(keyfile, 'r') as keyfile:
     mouser_key = keyfile.read().replace('\n', '');
 
 client = Client("https://api.mouser.com/service/searchapi.asmx?WSDL")
@@ -24,7 +28,7 @@ args = parser.parse_args();
 footprints = {};
 for libfile in args.libfiles:
     lib = SchLib(libfile);
-    for component in lib.components:
+    for i, component in enumerate(lib.components):
         footprint = component.fields[2];
         if not component.fields[0]["reference"].startswith("\"#") and not footprint["name"]:
             print("Component %s: Missing footprint!" % component.name);
@@ -54,7 +58,7 @@ for libfile in args.libfiles:
                     #component.addField({"fieldname": "Datasheet", "name": part.DataSheetUrl or ""});
                     component.fields[3]["name"] = part.DataSheetUrl or "";
                     component.addField({"fieldname": "Price", "name": part.PriceBreaks[0][0].Price.encode("ascii", "ignore").replace(",", ".") + " " + part.PriceBreaks[0][0].Currency if len(part.PriceBreaks) > 0 else "Not Available"});
-                    #print("Component %s: Availability: %s, Description: %s, Lifecycle: %s, Price: %s" % (component.name, part.Availability if hasattr(part, "Availability") else "Not Available", part.Description, part.LifecycleStatus, part.PriceBreaks[0][0].Price if len(part.PriceBreaks) > 0 else "Not Available"));
+                    print("[%d/%d]: %s, Availability: %s, Description: %s, Lifecycle: %s, Price: %s" % (i, len(lib.components), component.name, part.Availability if hasattr(part, "Availability") else "Not Available", part.Description, part.LifecycleStatus, part.PriceBreaks[0][0].Price if len(part.PriceBreaks) > 0 else "Not Available"));
                 #print res
             if not mpn["name"].startswith("#") and args.dump:
                 try:

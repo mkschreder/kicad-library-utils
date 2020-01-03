@@ -37,12 +37,15 @@ def fix_component(component):
 
 components = {};
 
-for component in lib_b.components:
+for component in lib_a.components:
     component = fix_component(component);
     components[component.name] = component;    
-    #pprint(vars(component))
 
-for component in lib_a.components:
+for component in lib_b.components:
+    if component.name in components:
+        print("Skipping component "+component.name)
+        continue
+    print("Adding new component "+component.name);
     component = fix_component(component);
     components[component.name] = component;    
 
@@ -53,7 +56,7 @@ for key in components:
 l.sort(key=lambda x: x.name);
 
 for component in l:
-    print(component.name);
+    print("Writing "+component.name);
     lib_out.addComponent(component);
 
 lib_out.save();
