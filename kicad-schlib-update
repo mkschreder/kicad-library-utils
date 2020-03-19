@@ -35,13 +35,16 @@ for libfile in args.libfiles:
         else:
             footprints[footprint["name"]] = footprint["name"];
         mpn = component.field("MPN")
-        if mpn:
+        if mpn and not mpn["name"].startswith("~"):
             if mpn["visibility"] == 'V':
                 if args.fix:
                     mpn["visibility"] = 'I';
                 else:
                     print("Component %s: MPN is visible!" % component.name);
-            if args.online and not mpn["name"].startswith("#") and (not component.field("Vendor") or not component.field("Availability") or not component.field("Description") or not component.field("LifeCycle") or not component.field("Price") or args.update):
+            if not mpn["name"].startswith("#") and (not component.field("Vendor") or not component.field("Availability") or not component.field("Description") or not component.field("LifeCycle") or not component.field("Price") or args.update):
+                if not args.online:
+                    print("Component %s will be updated!" % component.name);
+                    continue
                 try:
                     time.sleep(2); # up to 30 calls per minute
                     res = client.service.SearchByPartNumber(mpn["name"])
@@ -66,8 +69,7 @@ for libfile in args.libfiles:
                 except:
                     pass
         else:
-            print("Component %s missing MPN!" % component.name);
-            
+            continue;
     if args.fix:
         lib.save();
 

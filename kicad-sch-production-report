@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from __future__ import print_function
+from sch import *
+from pprint import pprint
+import pickle
+import argparse
+import csv, sys
+
+parser = argparse.ArgumentParser()
+parser.add_argument('sch_file', nargs='+')
+parser.add_argument('-u', action="store_true")
+parser.add_argument('-v', action="store_true")
+args = parser.parse_args()
+moved = 0;
+added = 0;
+
+
+for f in args.sch_file:
+    comps = {};
+    comps_new = {};
+
+    try:
+        with open(f + ".db", "rb") as db:
+            comps = pickle.load(db);
+    except:
+        pass
+
+    sch = Schematic(f)
+
+    comps_list = [];
+    for component in sch.components:
+        ref = component.fields[0]['ref'];
+        if component.unit:
+            ref += "_" + str(component.unit["unit"]);
+        if comps.has_key(ref):
+            old = comps[ref];
+            if old:
+                if old.position["posx"] != component.position["posx"] or old.position["posy"] != component.position["posy"]:
+                    if args.v:
+                        print(f + ": component "+ref+" moved!");
+                    moved += 1;
+        else:
+            added += 1;
+
+        # check if is power related component
+        comps[ref] = component;
+        comps_new[ref] = component;
+        comps_list.append(component);
+
+    for ref in comps:
+        if not comps_new.has_key(ref):
+            added -= 1;
+
+    if args.u:
+        with open(f + ".db", "wb") as db:
+            pickle.dump(comps_new, db);
+
+print("Added: "+str(added));
+print("Moved: "+str(moved));

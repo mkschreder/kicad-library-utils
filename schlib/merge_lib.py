@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -37,26 +37,14 @@ def fix_component(component):
 
 components = {};
 
-for component in lib_a.components:
-    component = fix_component(component);
+for component in lib_b.components:
     components[component.name] = component;    
 
-for component in lib_b.components:
+for component in lib_a.components:
     if component.name in components:
         print("Skipping component "+component.name)
         continue
     print("Adding new component "+component.name);
-    component = fix_component(component);
-    components[component.name] = component;    
-
-l = []
-for key in components:
-    l.append(components[key]);
-
-l.sort(key=lambda x: x.name);
-
-for component in l:
-    print("Writing "+component.name);
     lib_out.addComponent(component);
 
 lib_out.save();

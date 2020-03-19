@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+
+import argparse
+from schlib import *
+from suds.client import Client
+import time
+
+keyfile = os.path.dirname(os.path.realpath(__file__)) +"/mouser-key.txt";
+
+with open(keyfile, 'r') as keyfile:
+	mouser_key = keyfile.read().replace('\n', '');
+
+client = Client("https://api.mouser.com/service/searchapi.asmx?WSDL")
+
+header = client.factory.create("ns0:MouserHeader")
+header.AccountInfo.PartnerID = mouser_key
+client.set_options(soapheaders=header);
+
+parser = argparse.ArgumentParser(description='Check KiCad project library for missing part numbers')
+parser.add_argument('libfiles', nargs='+')
+parser.add_argument('--footprints', help='Dump list of all footprints used', action='store_true')
+args = parser.parse_args();
+
+footprints = {};
+for libfile in args.libfiles:
+	lib = SchLib(libfile);
+	for i, component in enumerate(lib.components):
+		footprint = component.fields[2];
+		if not component.fields[0]["reference"].startswith("\"#") and not footprint["name"]:
+			print("Component %s: Missing footprint!" % component.name);
+		else:
+			footprints[footprint["name"]] = footprint["name"];
+		mpn = component.field("MPN")
+		if mpn and not mpn["name"].startswith("~"):
+			if mpn["visibility"] == 'V':
+				if args.fix:
+					mpn["visibility"] = 'I';
+				else:
+					print("Component %s: MPN is visible!" % component.name);
+		elif not mpn:
+			print("Component %s missing MPN!" % component.name);
+
+if args.footprints:
+	for key in footprints:
+		print(key);
