@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+import argparse
+from schlib import *
+from suds.client import Client
+import time
+import sys
+import csv
+
+parser = argparse.ArgumentParser(description='Check KiCad project library for missing part numbers')
+parser.add_argument('libfiles', nargs='+')
+parser.add_argument('--to-csv', help='Dump components to csv', action='store_true')
+parser.add_argument('--from-csv', help='Update fields from csv', action='store_true')
+args = parser.parse_args();
+
+if args.to_csv:
+	print("Valid;Component;Availability;Description;Lifecycle;Price;Footprint");
+
+csvdata = {};
+with sys.stdin as csv_file:
+	csv_reader = csv.DictReader(csv_file);
+	for row in csv_reader:
+		csvdata[row["Value"]] = row;
+
+for libfile in args.libfiles:
+	lib = SchLib(libfile);
+	for i, component in enumerate(lib.components):
+		mpn = component.field("MPN")
+		if args.to_csv:
+			try:
+				sys.stdout.write("%s;" % (component.name));
+				sys.stdout.write("%s;" % component.fields[2]["name"]);
+				for field in ["MPN", "Description"]:
+					if(component.field(field)):
+						sys.stdout.write("%s;" % component.field(field)["name"])
+					else:
+						sys.stdout.write("-;");
+				sys.stdout.write("\n");
+			except Exception as e:
+				print("Error %s: %s" % (component.name, str(e)));
+				pass
+			continue
+		if args.from_csv:
+			try:
+				if(component.field("VALID")):
+					print("%s: has deprecated VALID field!" % component.name)
+					component.addField({"fieldname": "Valid", "name": "1"});
+					component.addField({"fieldname": "VALID", "name": ""});
+				else:
+					component.addField({"fieldname": "Valid", "name": csvdata[component.name]["Valid"]});
+			except Exception as e:
+				print("%s: %s" % (component.name, str(e)));
+	if args.from_csv:
+		lib.save();

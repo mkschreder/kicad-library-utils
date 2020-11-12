@@ -104,7 +104,7 @@ class Documentation(object):
         to_write.append("#\n")#again, spacer^^
         to_write.append("#End Doc Library\n")
 
-        f = open(filename, 'w', newline='\n')
+        f = open(filename, 'w')
         f.writelines(to_write)
         f.close()
 
@@ -589,6 +589,6 @@ class SchLib(object):
         to_write.append('#\n')
         to_write.append('#End Library\n')
 
-        f = open(filename, 'w', newline='\n')
+        f = open(filename, 'w')
         f.writelines(to_write)
         f.close()
